@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Brain, Trophy, Star, RotateCcw } from "lucide-react";
+import { Brain, Trophy, Star, RotateCcw, Share2 } from "lucide-react";
 
 const QuizSection = () => {
   const [currentQuiz, setCurrentQuiz] = useState(0);
@@ -12,6 +12,7 @@ const QuizSection = () => {
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [answers, setAnswers] = useState<number[]>([]);
 
   const quizzes = [
     {
@@ -19,7 +20,7 @@ const QuizSection = () => {
       question: "日本の国会は何院制ですか？",
       options: ["一院制", "二院制", "三院制", "四院制"],
       correct: 1,
-      explanation: "日本の国会は衆議院と参議院からなる二院制です。",
+      explanation: "日本の国会は衆議院と参議院からなる二院制です。衆議院は優越的地位を持ち、参議院は良識の府として機能します。",
       difficulty: "初級"
     },
     {
@@ -27,7 +28,7 @@ const QuizSection = () => {
       question: "選挙権が得られる年齢は？",
       options: ["16歳", "18歳", "20歳", "25歳"],
       correct: 1,
-      explanation: "2016年から選挙権年齢が18歳に引き下げられました。",
+      explanation: "2016年から選挙権年齢が20歳から18歳に引き下げられました。これにより約240万人の有権者が新たに加わりました。",
       difficulty: "初級"
     },
     {
@@ -35,19 +36,40 @@ const QuizSection = () => {
       question: "衆議院議員の任期は何年ですか？",
       options: ["3年", "4年", "5年", "6年"],
       correct: 1,
-      explanation: "衆議院議員の任期は4年ですが、解散により短縮される場合があります。",
+      explanation: "衆議院議員の任期は4年ですが、解散により短縮される場合があります。参議院議員の任期は6年で解散はありません。",
       difficulty: "中級"
+    },
+    {
+      id: 4,
+      question: "日本の総理大臣を選ぶのは？",
+      options: ["国民の直接選挙", "国会議員による選挙", "政党の代表選挙", "内閣による選任"],
+      correct: 1,
+      explanation: "総理大臣は国会議員の中から国会の議決で指名されます。通常は衆議院で多数を占める政党の党首が選ばれます。",
+      difficulty: "中級"
+    },
+    {
+      id: 5,
+      question: "地方自治体の首長の任期は？",
+      options: ["2年", "3年", "4年", "6年"],
+      correct: 2,
+      explanation: "都道府県知事や市町村長の任期は4年です。地方議会議員の任期も同じく4年となっています。",
+      difficulty: "上級"
     }
   ];
 
   const handleAnswerSelect = (answerIndex: number) => {
-    setSelectedAnswer(answerIndex);
+    if (!showResult) {
+      setSelectedAnswer(answerIndex);
+    }
   };
 
   const handleSubmitAnswer = () => {
     if (selectedAnswer === null) return;
     
     setShowResult(true);
+    const newAnswers = [...answers, selectedAnswer];
+    setAnswers(newAnswers);
+    
     if (selectedAnswer === quizzes[currentQuiz].correct) {
       setScore(score + 1);
     }
@@ -69,6 +91,7 @@ const QuizSection = () => {
     setShowResult(false);
     setScore(0);
     setQuizCompleted(false);
+    setAnswers([]);
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -82,9 +105,33 @@ const QuizSection = () => {
 
   const getScoreMessage = () => {
     const percentage = (score / quizzes.length) * 100;
-    if (percentage >= 80) return "素晴らしい！政治の基礎知識はバッチリです！";
-    if (percentage >= 60) return "良い調子です！もう少し勉強してみましょう。";
-    return "まだまだ伸びしろがあります！政治について学んでみませんか？";
+    if (percentage >= 90) return "🏆 パーフェクト！政治の知識は完璧です！";
+    if (percentage >= 80) return "🌟 素晴らしい！政治の基礎知識はバッチリです！";
+    if (percentage >= 60) return "👍 良い調子です！もう少し勉強してみましょう。";
+    if (percentage >= 40) return "📚 まだまだ伸びしろがあります！政治について学んでみませんか？";
+    return "🔰 基礎から学んでいきましょう！一歩ずつ進歩していけば大丈夫です。";
+  };
+
+  const getScoreLevel = () => {
+    const percentage = (score / quizzes.length) * 100;
+    if (percentage >= 80) return "政治エキスパート";
+    if (percentage >= 60) return "政治通";
+    if (percentage >= 40) return "政治初心者";
+    return "政治ビギナー";
+  };
+
+  const shareResult = () => {
+    const text = `PolYouthの政治クイズで${score}/${quizzes.length}問正解しました！レベル：${getScoreLevel()}`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'PolYouth 政治クイズ結果',
+        text: text,
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(text);
+      alert('結果をクリップボードにコピーしました！');
+    }
   };
 
   if (quizCompleted) {
@@ -103,18 +150,46 @@ const QuizSection = () => {
             <CardTitle className="text-2xl">スコア発表</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-6">
-            <div className="text-6xl font-bold text-blue-600">
-              {score}/{quizzes.length}
+            <div className="space-y-2">
+              <div className="text-6xl font-bold text-blue-600">
+                {score}/{quizzes.length}
+              </div>
+              <Badge className="text-lg px-4 py-2">
+                {getScoreLevel()}
+              </Badge>
             </div>
             <div className="text-xl text-gray-700">
               {getScoreMessage()}
             </div>
+            
+            {/* 詳細結果 */}
+            <div className="bg-gray-50 rounded-lg p-4 text-left">
+              <h4 className="font-semibold mb-3 text-center">詳細結果</h4>
+              <div className="space-y-2">
+                {quizzes.map((quiz, index) => (
+                  <div key={index} className="flex items-center space-x-2 text-sm">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${
+                      answers[index] === quiz.correct ? 'bg-green-500' : 'bg-red-500'
+                    }`}>
+                      {answers[index] === quiz.correct ? '○' : '×'}
+                    </span>
+                    <span className="flex-1">問{index + 1}: {quiz.question}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Progress value={(score / quizzes.length) * 100} className="h-3" />
+            
             <div className="flex justify-center space-x-4">
               <Button onClick={resetQuiz} className="flex items-center space-x-2">
                 <RotateCcw className="h-4 w-4" />
                 <span>もう一度挑戦</span>
               </Button>
-              <Button variant="outline">結果をシェア</Button>
+              <Button variant="outline" onClick={shareResult} className="flex items-center space-x-2">
+                <Share2 className="h-4 w-4" />
+                <span>結果をシェア</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -134,9 +209,9 @@ const QuizSection = () => {
         <div className="mb-6">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>問題 {currentQuiz + 1} / {quizzes.length}</span>
-            <span>スコア: {score}/{currentQuiz}</span>
+            <span>現在のスコア: {score}/{currentQuiz + (showResult ? 1 : 0)}</span>
           </div>
-          <Progress value={((currentQuiz + 1) / quizzes.length) * 100} className="h-2" />
+          <Progress value={((currentQuiz + (showResult ? 1 : 0)) / quizzes.length) * 100} className="h-2" />
         </div>
 
         <Card>
@@ -151,7 +226,7 @@ const QuizSection = () => {
               </div>
             </div>
             <CardTitle className="text-xl leading-relaxed">
-              {quizzes[currentQuiz].question}
+              Q{currentQuiz + 1}. {quizzes[currentQuiz].question}
             </CardTitle>
           </CardHeader>
           
@@ -189,14 +264,20 @@ const QuizSection = () => {
                       {String.fromCharCode(65 + index)}
                     </div>
                     <span>{option}</span>
+                    {showResult && index === quizzes[currentQuiz].correct && (
+                      <Star className="h-4 w-4 text-green-500 ml-auto" />
+                    )}
                   </div>
                 </button>
               ))}
             </div>
 
             {showResult && (
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-2">解説</h4>
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                  {selectedAnswer === quizzes[currentQuiz].correct ? '🎉 正解！' : '❌ 不正解'}
+                  <span className="ml-2 text-sm font-normal">解説</span>
+                </h4>
                 <p className="text-blue-800">{quizzes[currentQuiz].explanation}</p>
               </div>
             )}
@@ -212,7 +293,7 @@ const QuizSection = () => {
                 </Button>
               ) : (
                 <Button onClick={handleNextQuestion} className="px-8">
-                  {currentQuiz < quizzes.length - 1 ? '次の問題' : '結果を見る'}
+                  {currentQuiz < quizzes.length - 1 ? '次の問題へ' : '結果を見る'}
                 </Button>
               )}
             </div>
